@@ -139,7 +139,8 @@ window.joinChannel = async () => {
   const res = await apiFetch("POST", `/channels/join/${code}`);
   if (!res.ok) { alert("Invalid code"); return; }
   const ch = await res.json();
-  if (!myChannels.find(c => c.id === ch.id)) myChannels.push(ch);
+  const exists = myChannels.some(c => c.id === ch.id);
+  if (!exists) myChannels.push(ch);
   renderChannels();
   closeNewCh();
   openChannel(ch);
