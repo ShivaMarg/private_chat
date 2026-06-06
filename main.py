@@ -33,10 +33,9 @@ app.include_router(websocket.router, prefix="/ws",           tags=["ws"])
 def list_routes():
     return [{"path": r.path, "methods": list(r.methods or [])} for r in app.routes]
 
-# ── Serve static JS and CSS files ────────────────────────────────
+# ── Serve static JS files ─────────────────────────────────────────
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-app.mount("/js",  StaticFiles(directory=os.path.join(static_dir, "js")),  name="js")
-app.mount("/css", StaticFiles(directory=os.path.join(static_dir, "css")), name="css")
+app.mount("/js", StaticFiles(directory=os.path.join(static_dir, "js")), name="js")
 
 # ── Catch-all: serve index.html for everything else ───────────────
 @app.get("/{full_path:path}")
