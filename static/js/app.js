@@ -227,23 +227,25 @@ async function sendMsg() {
   if (!text || !activeChannel || !ws || ws.readyState !== 1) return;
   input.value = "";
 
-  // Find the recipient — the other member in the channel
-  const otherMembers = activeChannel.members.filter(id => id !== session.user_id);
+  // Encrypt with RECIPIENT's key so they can decrypt
+  const members = activeChannel.members.filter(id => id !== session.user_id);
+  let targetUsername;
 
-  let encryptPubKey;
-  if (otherMembers.length === 0 || activeChannel.is_group) {
-    // Group or solo: encrypt with own key (readable only by self)
-    encryptPubKey = await fetchPublicKey(session.username);
-  } else {
-    // 1:1: encrypt with recipient's public key so THEY can read it
-    // But we also need to be able to read our own sent messages...
-    // Solution: encrypt with YOUR OWN key for display, send recipient's key to server
-    encryptPubKey = await fetchPublicKey(session.username); // fallback for now
+  if (members.length > 0 && !activeChannel.is_group) {
+    // Need to resolve user_id → username; store it on channel load
+    targetUsername = activeChannel.memberUsernames?.find(u => u !== session.username);
   }
 
+  const pubKeyStr = targetUsername
+    ? await fetchPublicKey(targetUsername)
+    : await fetchPublicKey(session.username);
+
   const { ciphertext, iv, ephemeral_public_key } = await E2EE.encryptMessage(
-    text, JSON.parse(encryptPubKey)
+    text, JSON.parse(pubKeyStr)
   );
+
+  // Render own message immediately from plaintext (no decrypt needed)
+  renderMessageLocal(text);
 
   ws.send(JSON.stringify({
     type: "message",
@@ -254,37 +256,19 @@ async function sendMsg() {
   }));
 }
 
-// ── Decrypt and render a message ──────────────────────────────────
-async function renderMessage(msg) {
-  const isMine = msg.sender_id === session.user_id;
-  let plaintext = "[encrypted]";
-
-  try {
-    plaintext = await E2EE.decryptMessage(
-      msg.ciphertext, msg.iv, msg.ephemeral_public_key, session.privateJwk
-    );
-  } catch (_) {
-    // Message encrypted with a different key — can't decrypt (e.g. messages from before this session)
-    plaintext = "🔒 (encrypted for another session)";
-  }
-
+function renderMessageLocal(text) {
   const wrap = document.createElement("div");
-  wrap.className = `bubble-wrap ${isMine ? "me" : "them"}`;
-  wrap.dataset.msgId = msg.id;
-
-  const time = new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
+  wrap.className = "bubble-wrap me";
+  const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   wrap.innerHTML = `
-    ${!isMine ? `<div class="sender-label">${esc(msg.sender_username)}</div>` : ""}
-    <div class="bubble ${msg.starred ? "starred" : ""}" id="bubble-${msg.id}">
-      <div class="content">${esc(plaintext)}</div>
+    <div class="bubble">
+      <div class="content">${esc(text)}</div>
       <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:4px">
-        <button class="star-btn ${msg.starred ? "on" : ""}" title="Star" onclick="toggleStar('${msg.id}', this)">⭐</button>
         <span class="ts">${time}</span>
       </div>
     </div>`;
-
   document.getElementById("messages").appendChild(wrap);
+  scrollBottom();
 }
 
 window.toggleStar = async (msgId, btn) => {
