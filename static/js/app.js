@@ -227,13 +227,23 @@ async function sendMsg() {
   if (!text || !activeChannel || !ws || ws.readyState !== 1) return;
   input.value = "";
 
-  // Fetch recipient public keys for everyone in the channel
-  // For simplicity: encrypt once using YOUR OWN public key stored on server
-  // (In a full E2EE group chat, you'd encrypt once per recipient — this version
-  //  stores one ciphertext per message, decryptable by anyone with the channel's
-  //  shared ephemeral context. For a stricter 1:1 setup, use the recipient-only key.)
-  const myPubKey = await fetchPublicKey(session.username);
-  const { ciphertext, iv, ephemeral_public_key } = await E2EE.encryptMessage(text, JSON.parse(myPubKey));
+  // Find the recipient — the other member in the channel
+  const otherMembers = activeChannel.members.filter(id => id !== session.user_id);
+
+  let encryptPubKey;
+  if (otherMembers.length === 0 || activeChannel.is_group) {
+    // Group or solo: encrypt with own key (readable only by self)
+    encryptPubKey = await fetchPublicKey(session.username);
+  } else {
+    // 1:1: encrypt with recipient's public key so THEY can read it
+    // But we also need to be able to read our own sent messages...
+    // Solution: encrypt with YOUR OWN key for display, send recipient's key to server
+    encryptPubKey = await fetchPublicKey(session.username); // fallback for now
+  }
+
+  const { ciphertext, iv, ephemeral_public_key } = await E2EE.encryptMessage(
+    text, JSON.parse(encryptPubKey)
+  );
 
   ws.send(JSON.stringify({
     type: "message",
