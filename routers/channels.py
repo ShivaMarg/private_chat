@@ -24,8 +24,7 @@ def _fmt(ch: dict) -> dict:
     }
 
 @router.post("/", response_model=ChannelOut)
-async def create_channel(body: ChannelCreate, user_id: str = Depends(get_current_user)):
-    db  = get_db()
+async def create_channel(body: ChannelCreate, user_id: str = Depends(get_current_user), db = Depends(get_db)):
     doc = {
         "name":        body.name,
         "is_group":    body.is_group,
@@ -38,8 +37,7 @@ async def create_channel(body: ChannelCreate, user_id: str = Depends(get_current
     return ChannelOut(**_fmt(doc))
 
 @router.post("/join/{invite_code}", response_model=ChannelOut)
-async def join_channel(invite_code: str, user_id: str = Depends(get_current_user)):
-    db  = get_db()
+async def join_channel(invite_code: str, user_id: str = Depends(get_current_user), db = Depends(get_db)):
     oid = ObjectId(user_id)
     ch  = await db.channels.find_one({"invite_code": invite_code})
     if not ch:
@@ -53,18 +51,27 @@ async def join_channel(invite_code: str, user_id: str = Depends(get_current_user
     return ChannelOut(**_fmt(ch))
 
 @router.get("/", response_model=list)
-async def list_my_channels(user_id: str = Depends(get_current_user)):
-    db  = get_db()
+async def list_my_channels(user_id: str = Depends(get_current_user), db = Depends(get_db)):
     oid = ObjectId(user_id)
     channels = await db.channels.find({"members": oid}).to_list(100)
     return [ChannelOut(**_fmt(c)) for c in channels]
 
 @router.delete("/{channel_id}")
-async def leave_channel(channel_id: str, user_id: str = Depends(get_current_user)):
-    db  = get_db()
+async def leave_channel(channel_id: str, user_id: str = Depends(get_current_user), db = Depends(get_db)):
     oid = ObjectId(user_id)
     await db.channels.update_one(
         {"_id": ObjectId(channel_id)},
         {"$pull": {"members": oid}}
     )
     return {"ok": True}
+
+
+@router.get("/debug/me")
+async def debug_me(user_id: str = Depends(get_current_user)):
+    db = get_db()
+    return {
+        "user_id_raw": user_id,
+        "user_id_len": len(user_id),
+        "db_is_none": db is None,
+        "valid_oid": ObjectId.is_valid(user_id)
+    }
