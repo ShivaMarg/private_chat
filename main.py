@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from core.database import connect_db, disconnect_db
 from routers import auth, messages, channels, websocket
+import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,18 +22,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── API routes FIRST ──────────────────────────────────────────────
 app.include_router(auth.router,      prefix="/api/auth",     tags=["auth"])
 app.include_router(channels.router,  prefix="/api/channels", tags=["channels"])
 app.include_router(messages.router,  prefix="/api/messages", tags=["messages"])
 app.include_router(websocket.router, prefix="/ws",           tags=["ws"])
 
-# Static files MUST be mounted LAST — it catches all unmatched routes
-
 @app.get("/api/debug/routes")
 def list_routes():
-    return [{"path": r.path, "methods": list(r.methods)} for r in app.routes]
+    return [{"path": r.path, "methods": list(r.methods or [])} for r in app.routes]
 
-import os
+# ── Static files LAST — catches everything else ───────────────────
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
-
