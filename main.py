@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from core.database import connect_db, disconnect_db
 from routers import auth, messages, channels, websocket
+import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,4 +32,6 @@ app.include_router(channels.router, prefix="/api/channels", tags=["channels"])
 app.include_router(messages.router, prefix="/api/messages", tags=["messages"])
 app.include_router(websocket.router, prefix="/ws",          tags=["ws"])
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
