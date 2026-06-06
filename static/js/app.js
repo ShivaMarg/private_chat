@@ -3,7 +3,7 @@
 const API = location.origin + "/api";
 
 let session   = null;   // { token, user_id, username, privateJwk }
-let channels  = [];
+let myChannels = [];   // was: let channels = [];
 let activeChannel = null;
 let ws        = null;
 let peerKeys  = {};     // { username: publicJwkStr }
@@ -96,15 +96,15 @@ async function bootApp() {
 
 // ── Channels ──────────────────────────────────────────────────────
 async function loadChannels() {
-  const res  = await apiFetch("GET", "/channels");
-  channels   = await res.json();
+  const res = await apiFetch("GET", "/channels");
+  myChannels = await res.json();
   renderChannels();
 }
 
 function renderChannels() {
   const list = document.getElementById("channels-list");
   list.innerHTML = "";
-  channels.forEach(ch => {
+  myChannels.forEach(ch => {
     const el = document.createElement("div");
     el.className = "channel-item" + (activeChannel?.id === ch.id ? " active" : "");
     el.innerHTML = `
@@ -127,7 +127,7 @@ window.createChannel = async () => {
   if (!name) return;
   const res = await apiFetch("POST", "/channels", { name, is_group: isGroup });
   const ch  = await res.json();
-  channels.push(ch);
+  myChannels.push(ch);
   renderChannels();
   closeNewCh();
   openChannel(ch);
@@ -139,7 +139,7 @@ window.joinChannel = async () => {
   const res = await apiFetch("POST", `/channels/join/${code}`);
   if (!res.ok) { alert("Invalid code"); return; }
   const ch = await res.json();
-  if (!channels.find(c => c.id === ch.id)) channels.push(ch);
+  if (!myChannels.find(c => c.id === ch.id)) myChannels.push(ch);
   renderChannels();
   closeNewCh();
   openChannel(ch);
