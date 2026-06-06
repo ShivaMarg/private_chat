@@ -31,7 +31,14 @@ app.include_router(websocket.router, prefix="/ws",           tags=["ws"])
 
 @app.get("/api/debug/routes")
 def list_routes():
-    return [{"path": r.path, "methods": list(r.methods or [])} for r in app.routes]
+    result = []
+    for r in app.routes:
+        result.append({
+            "path":    getattr(r, "path", str(r)),
+            "methods": sorted(r.methods) if getattr(r, "methods", None) else [],
+            "name":    getattr(r, "name", ""),
+        })
+    return result
 
 # ── Serve static JS files ─────────────────────────────────────────
 static_dir = os.path.join(os.path.dirname(__file__), "static")
