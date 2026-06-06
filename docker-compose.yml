@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - DB_NAME=private_chat
+      - SECRET_KEY=REPLACE_WITH_LONG_RANDOM_STRING_OPENSSL_RAND_HEX_32
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    # No external port exposed — only accessible inside docker network
+
+volumes:
+  mongo_data:

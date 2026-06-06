@@ -1,0 +1,74 @@
+# === Environment & Secrets ===
+# Never commit credentials or local configurations
+.env
+.env.local
+.env.*.local
+*.env
+*.pem
+*.key
+*.secret
+
+# === System Files ===
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# === Package Managers & Dependencies ===
+# JavaScript / Node.js
+node_modules/
+jspm_packages/
+.npm
+.yarn-integrity
+yarn-error.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Ruby
+/vendor/bundle/
+.bundle/
+
+# === IDEs and Editors ===
+# VS Code
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+
+# IntelliJ / WebStorm / PyCharm
+.idea/
+*.iws
+*.iml
+
+# Vim / Emacs
+*~
+*.swp
+*.swo
+
+# === Logs and Diagnostics ===
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# === Build Outputs & Caches ===
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+.eslintcache
