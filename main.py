@@ -33,9 +33,10 @@ app.include_router(websocket.router, prefix="/ws",           tags=["ws"])
 def list_routes():
     result = []
     for r in app.routes:
+        methods = getattr(r, "methods", None)
         result.append({
             "path":    getattr(r, "path", str(r)),
-            "methods": sorted(r.methods) if getattr(r, "methods", None) else [],
+            "methods": sorted(methods) if methods else [],
             "name":    getattr(r, "name", ""),
         })
     return result
