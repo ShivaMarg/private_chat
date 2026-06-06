@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from core.database import connect_db, disconnect_db
 from routers import auth, messages, channels, websocket
@@ -22,7 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── API routes FIRST ──────────────────────────────────────────────
+# ── API routes ────────────────────────────────────────────────────
 app.include_router(auth.router,      prefix="/api/auth",     tags=["auth"])
 app.include_router(channels.router,  prefix="/api/channels", tags=["channels"])
 app.include_router(messages.router,  prefix="/api/messages", tags=["messages"])
@@ -32,6 +33,12 @@ app.include_router(websocket.router, prefix="/ws",           tags=["ws"])
 def list_routes():
     return [{"path": r.path, "methods": list(r.methods or [])} for r in app.routes]
 
-# ── Static files LAST — catches everything else ───────────────────
+# ── Serve static JS and CSS files ────────────────────────────────
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+app.mount("/js",  StaticFiles(directory=os.path.join(static_dir, "js")),  name="js")
+app.mount("/css", StaticFiles(directory=os.path.join(static_dir, "css")), name="css")
+
+# ── Catch-all: serve index.html for everything else ───────────────
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    return FileResponse(os.path.join(static_dir, "index.html"))
